@@ -19,6 +19,8 @@ try {
         throw 'PACKAGE_VERSION must contain three numeric components, each between 0 and 65535.'
     }
     $versionParts = ($version.Split('.') + '0') -join ','
+    $runtimeVersionFile = Join-Path $script:ToolRoot '_build_version.txt'
+    $version | Set-Content -LiteralPath $runtimeVersionFile -Encoding UTF8
     $versionFile = Join-Path $script:ToolRoot 'receiver-version.txt'
     @"
 VSVersionInfo(ffi=FixedFileInfo(filevers=($versionParts), prodvers=($versionParts), mask=0x3f, flags=0, OS=0x40004, fileType=0x1, subtype=0, date=(0,0)), kids=[StringFileInfo([StringTable('040904B0', [StringStruct('CompanyName', 'Ding-Ding Projects'), StringStruct('FileDescription', 'Clipboard Sync'), StringStruct('FileVersion', '$version'), StringStruct('ProductVersion', '$version'), StringStruct('ProductName', 'Clipboard Sync'), StringStruct('OriginalFilename', 'ClipboardSync.exe'), StringStruct('SquirrelAwareVersion', '1')])]), VarFileInfo([VarStruct('Translation', [1033, 1200])])])
@@ -28,7 +30,7 @@ VSVersionInfo(ffi=FixedFileInfo(filevers=($versionParts), prodvers=($versionPart
     Invoke-Checked $venvPython @('-m','pip','install','--disable-pip-version-check','-r','requirements.txt','pyinstaller==6.16.0')
     Invoke-Checked (Join-Path $nodeRoot 'npm.cmd') @('ci','--no-audit','--no-fund')
     Invoke-Checked (Join-Path $nodeRoot 'npm.cmd') @('run','build')
-    Invoke-Checked $venvPython @('-m','PyInstaller','--noconfirm','--clean','--onefile','--console','--name','ClipboardSync','--version-file',$versionFile,'--distpath','release','--workpath','build\pyinstaller','--specpath','build','--collect-submodules','receiver','--add-data',"$script:ProjectRoot\dist;dist",'--add-data',"$gitRoot;tools/git",'launcher.py')
+    Invoke-Checked $venvPython @('-m','PyInstaller','--noconfirm','--clean','--onefile','--console','--name','ClipboardSync','--version-file',$versionFile,'--distpath','release','--workpath','build\pyinstaller','--specpath','build','--collect-submodules','receiver','--add-data',"$runtimeVersionFile;receiver",'--add-data',"$script:ProjectRoot\dist;dist",'--add-data',"$gitRoot;tools/git",'launcher.py')
     $exe = Join-Path $script:ProjectRoot 'release\ClipboardSync.exe'
     if (!(Test-Path $exe) -or (Get-Item $exe).Length -lt 1000000) { throw 'Executable output is missing or invalid.' }
     Write-Host "Portable Windows application: $exe"
@@ -81,6 +83,8 @@ VSVersionInfo(ffi=FixedFileInfo(filevers=($versionParts), prodvers=($versionPart
     }
     exit 0
 } catch {
-    Write-Error $_
+    [Console]::Error.WriteLine($_.Exception.ToString())
+    [Console]::Error.WriteLine($_.InvocationInfo.PositionMessage)
+    [Console]::Error.WriteLine($_.ScriptStackTrace)
     exit 1
 }
