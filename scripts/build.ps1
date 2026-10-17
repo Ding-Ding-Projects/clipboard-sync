@@ -15,12 +15,12 @@ try {
     Invoke-Checked $venvPython @('-m','pip','install','--disable-pip-version-check','-r','requirements.txt','pyinstaller==6.16.0')
     Invoke-Checked (Join-Path $nodeRoot 'npm.cmd') @('ci','--no-audit','--no-fund')
     Invoke-Checked (Join-Path $nodeRoot 'npm.cmd') @('run','build')
-    Invoke-Checked $venvPython @('-m','PyInstaller','--noconfirm','--clean','--onefile','--console','--name','ClipboardSync','--distpath','release','--workpath','build\pyinstaller','--specpath','build','--collect-submodules','receiver','--add-data','dist;dist','--add-data',"$gitRoot;tools/git",'launcher.py')
+    Invoke-Checked $venvPython @('-m','PyInstaller','--noconfirm','--clean','--onefile','--console','--name','ClipboardSync','--distpath','release','--workpath','build\pyinstaller','--specpath','build','--collect-submodules','receiver','--add-data',"$script:ProjectRoot\dist;dist",'--add-data',"$gitRoot;tools/git",'launcher.py')
     $exe = Join-Path $script:ProjectRoot 'release\ClipboardSync.exe'
     if (!(Test-Path $exe) -or (Get-Item $exe).Length -lt 1000000) { throw 'Executable output is missing or invalid.' }
     Write-Host "Portable Windows application: $exe"
     Get-FileHash $exe -Algorithm SHA256 | Format-List
-    Invoke-Checked $venvPython @('-m','PyInstaller','--noconfirm','--clean','--onefile','--console','--name','ClipboardSync-Guide','--distpath','release','--workpath','build\guide','--specpath','build','--add-data','docs;docs','guide.py')
+    Invoke-Checked $venvPython @('-m','PyInstaller','--noconfirm','--clean','--onefile','--console','--name','ClipboardSync-Guide','--distpath','release','--workpath','build\guide','--specpath','build','--add-data',"$script:ProjectRoot\docs;docs",'guide.py')
     if ($Installer) {
         $innoRoot = Join-Path $script:ToolRoot 'inno'
         $compiler = Join-Path $innoRoot 'ISCC.exe'
@@ -35,6 +35,13 @@ try {
         Write-Host 'Installer is unsigned. Application data and local history are retained on uninstall.'
         Get-FileHash $setup -Algorithm SHA256 | Format-List
     }
+    $sourceCommit = & git rev-parse HEAD
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot bind build artifacts to source commit.' }
+    $artifactHashes = @{}
+    Get-ChildItem (Join-Path $script:ProjectRoot 'release\*.exe') | ForEach-Object {
+        $artifactHashes[$_.Name] = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+    }
+    @{ sourceCommit = $sourceCommit; version = '0.1.0'; builtAtUtc = [DateTime]::UtcNow.ToString('o'); artifacts = $artifactHashes; nativeWindowsAcceptance = 'not verified by build' } | ConvertTo-Json -Depth 4 | Set-Content (Join-Path $script:ProjectRoot 'release\build-receipt.json')
     if (!$silent) {
         $choice = Read-Host 'Build succeeded. Open Clipboard Sync now? [y/N]'
         if ($choice -match '^[yY]') { Start-Process -FilePath $exe }

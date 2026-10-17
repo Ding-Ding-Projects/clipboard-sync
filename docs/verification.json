@@ -1,0 +1,20 @@
+{
+  "sourceCommit": "081ff0e",
+  "route": "Isolated headless Chromium on Linux, actual receiver HTTP and local Git",
+  "nativeWindowsVerified": false,
+  "checks": [
+    "Desktop transfer persisted; native copying honestly unavailable",
+    "Phone transfer persisted through authenticated mobile API",
+    "Phone file transfer persisted",
+    "Actual API history renders uploaded file and text",
+    "History search filters actual records",
+    "Dedicated history clear restores search",
+    "Friendly computer-name setting present",
+    "Guide checklist persists and troubleshooting changes explanation",
+    "No browser JavaScript errors"
+  ],
+  "screenshots": [
+    "docs/images/workspace.png"
+  ],
+  "notes": "Synthetic task-owned text/file content only; no QR or token visible in published capture."
+}
