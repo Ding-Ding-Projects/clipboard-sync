@@ -16,5 +16,19 @@
   "screenshots": [
     "docs/images/workspace.png"
   ],
-  "notes": "Synthetic task-owned text/file content only; no QR or token visible in published capture."
+  "notes": "Synthetic task-owned text/file content only; no QR or token visible in published capture.",
+  "automatedTestsPassed": 22,
+  "container": {
+    "sourceCommit": "a7d86d8cf2aeefbe9dd733a887917e71277f14d2",
+    "sha256": "e51c9fea29db2d7ce1d3dbd7c14aeae5c09756a6648fda615a127fa6bea9ef7d",
+    "checks": [
+      "Compose startup",
+      "HTTP health",
+      "Docker HEALTHCHECK healthy",
+      "runtime UID 10001",
+      "authenticated WebSocket forwarding and ACK"
+    ],
+    "ownedResourcesRemoved": true
+  },
+  "powershellSyntax": "build.ps1, host.ps1 and toolchain.ps1 parsed successfully with PowerShell 7.5.3 on Linux; Windows execution unverified"
 }
