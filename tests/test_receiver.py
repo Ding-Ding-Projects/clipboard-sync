@@ -125,6 +125,38 @@ class ReceiverTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(ws.messages,[])
         self.receiver.ws=None
 
+    async def test_busy_clipboard_still_publishes_and_retry_preserves_deduplication(self):
+        class BusyOnceClipboard:
+            available=True
+            attempts=0
+            def write(self,payload,path=None):
+                self.attempts+=1
+                if self.attempts==1: raise OSError('Windows clipboard is busy; try again')
+                return True,1
+        class Socket:
+            closed=False
+            def __init__(self): self.messages=[]
+            async def send_json(self,event): self.messages.append(event)
+        socket=Socket(); self.receiver.ws=socket
+        self.receiver.clipboard=BusyOnceClipboard()
+        payload={'type':'text','text':'Saved and relayed despite a busy clipboard'}
+        try:
+            response=await self.client.post('/api/transfer',headers=self.mobile,json=payload)
+            result=await response.json()
+            self.assertEqual(response.status,503)
+            self.assertFalse(result['ok']); self.assertFalse(result['copied'])
+            self.assertTrue(result['saved']); self.assertIn('clipboard access failed',result['error'])
+            self.assertEqual(len(self.receiver.history.items),1)
+            self.assertEqual(self.receiver.history.payload(self.receiver.history.items[0]),payload)
+            self.assertEqual([event['payload'] for event in socket.messages],[payload])
+            response=await self.client.post('/api/transfer',headers=self.mobile,json=payload)
+            retry=await response.json()
+            self.assertEqual(response.status,200); self.assertTrue(retry['copied'])
+            self.assertEqual(retry['id'],result['id'])
+            self.assertEqual(len(self.receiver.history.items),1)
+            self.assertEqual(len(socket.messages),1)
+        finally: self.receiver.ws=None
+
     async def test_external_copy_immediately_after_native_write_is_captured(self):
         class RacingClipboard:
             available=True

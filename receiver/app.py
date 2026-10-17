@@ -144,18 +144,23 @@ class Receiver:
     async def accept(self,payload,source,broadcast=True,copy=True):
         async with self.lock:
             item,new=await asyncio.to_thread(self.history.add,payload,source)
-            copied=False
+            copied=False; clipboard_error=None
             if copy:
                 path=None
                 if payload['type']=='file':
                     folder=self.root/'files'/item['id']; folder.mkdir(parents=True,exist_ok=True); path=folder/payload['name']; path.write_bytes(payload['_bytes'])
-                copied,written_sequence=await asyncio.to_thread(self.clipboard.write,payload,path)
-                if copied: self.last_seq=written_sequence
+                try:
+                    copied,written_sequence=await asyncio.to_thread(self.clipboard.write,payload,path)
+                    if copied: self.last_seq=written_sequence
+                except OSError:
+                    clipboard_error='Content saved locally, but Windows clipboard access failed; try again'
             if new and broadcast and not self.settings['paused'] and self.ws and not self.ws.closed:
                 wire={k:v for k,v in payload.items() if k!='_bytes'}
                 if '_bytes' in payload: wire['data']=base64.b64encode(payload['_bytes']).decode()
                 try: await self.ws.send_json({'type':'clipboard','id':str(uuid.uuid4()),'origin':self.secrets['device'],'createdAt':now(),'payload':wire})
                 except Exception: self.error='Relay disconnected; content saved locally'
+            if clipboard_error:
+                return {'ok':False,'id':item['id'],'saved':True,'copied':False,'status':clipboard_error,'error':clipboard_error}
             return {'ok':True,'id':item['id'],'copied':copied,'status':'copied' if copied else 'saved locally; native clipboard unavailable'}
     async def api(self,r):
         tail=r.match_info['tail']; method=r.method
@@ -164,7 +169,9 @@ class Receiver:
             self.phone_seen=time.time(); return web.json_response({k:v for k,v in self.status(r).items() if k in ('deviceName','clipboardAvailable','paused','version')}|{'maxFileBytes':MAX_BYTES})
         if tail=='transfer' and method=='POST':
             if self.settings['paused']: raise web.HTTPConflict(reason='Clipboard synchronization is paused')
-            raw=await r.json(); self.phone_seen=time.time(); return web.json_response(await self.accept(validate(raw),str(raw.get('deviceName','Phone'))))
+            raw=await r.json(); self.phone_seen=time.time()
+            result=await self.accept(validate(raw),str(raw.get('deviceName','Phone')))
+            return web.json_response(result,status=200 if result['ok'] else 503)
         if tail=='history' and method=='GET':
             kind=r.query.get('type','all'); q=r.query.get('q','').casefold()
             items=[x for x in self.history.items if (kind=='all' or x['type']==kind) and (not q or q in (x['name']+' '+x['preview']).casefold() or (x['type']=='text' and q in (await asyncio.to_thread((self.history.path/x['id']/'content').read_text,encoding='utf-8')).casefold()))]
@@ -219,7 +226,9 @@ class Receiver:
             item=self.history.get(match[1])
             if not item: raise web.HTTPNotFound(reason='History entry not found')
             action=match[2]; payload=self.history.payload(item)
-            if action=='restore' and method=='POST': return web.json_response(await self.accept(payload,'Restore'))
+            if action=='restore' and method=='POST':
+                result=await self.accept(payload,'Restore')
+                return web.json_response(result,status=200 if result['ok'] else 503)
             if action=='detail' and method=='GET': return web.json_response(item|({'text':payload['text']} if item['type']=='text' else {}))
             if action=='file' and method=='GET':
                 response=web.FileResponse(self.history.path/item['id']/'content'); response.headers['Content-Disposition']="attachment; filename*=UTF-8''"+quote(item['name'],safe=''); return response
