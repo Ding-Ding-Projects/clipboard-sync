@@ -21,8 +21,15 @@ $required = @('ClipboardSync.exe','ClipboardSync-Guide.exe','Setup.exe','RELEASE
 foreach ($name in $required) { if (!(Test-Path "release/$name")) { throw "Missing release asset: $name" } }
 $receipt = Get-Content release/build-receipt.json -Raw | ConvertFrom-Json
 if ($receipt.sourceCommit -ne $env:GITHUB_SHA) { throw 'Build receipt does not match publication source.' }
+if ($receipt.version -ne $version) { throw 'Build receipt version does not match publication version.' }
+foreach ($name in ($required | Where-Object { $_ -ne 'build-receipt.json' })) {
+    $expected = $receipt.artifacts.$name
+    if (!$expected -or $expected -ne (Get-FileHash "release/$name" -Algorithm SHA256).Hash.ToLowerInvariant()) { throw "Artifact differs from build receipt: $name" }
+}
 $source = Invoke-GitHub @('api',"repos/$env:GITHUB_REPOSITORY/commits/$env:GITHUB_SHA",'--jq','.sha')
 if ($source -ne $env:GITHUB_SHA) { throw 'Source commit readback failed.' }
+$ancestry = (Invoke-GitHub @('api',"repos/$env:GITHUB_REPOSITORY/compare/$env:GITHUB_SHA...main")) | ConvertFrom-Json
+if ($ancestry.merge_base_commit.sha -ne $env:GITHUB_SHA) { throw 'Release source is not an ancestor of main.' }
 $required | ForEach-Object { $hash = (Get-FileHash "release/$_" -Algorithm SHA256).Hash.ToLowerInvariant(); "$hash  $_" } | Set-Content release/SHA256SUMS.txt
 $jobs = (Invoke-GitHub @('api',"repos/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID/jobs?per_page=100")) | ConvertFrom-Json
 $started = ($jobs.jobs | Where-Object started_at | Sort-Object started_at | Select-Object -First 1).started_at

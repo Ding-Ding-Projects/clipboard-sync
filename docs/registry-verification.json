@@ -1,0 +1,31 @@
+{
+  "sourceCommit": "9844ed1231024442fea100a4b4d496d21e89546c",
+  "image": "ghcr.io/ding-ding-projects/clipboard-sync-server:9844ed1231024442fea100a4b4d496d21e89546c",
+  "anonymousManifestRead": true,
+  "route": "docker manifest inspect with an empty per-command credential directory",
+  "manifest": {
+    "schemaVersion": 2,
+    "mediaType": "application/vnd.oci.image.index.v1+json",
+    "manifests": [
+      {
+        "mediaType": "application/vnd.oci.image.manifest.v1+json",
+        "size": 1811,
+        "digest": "sha256:6eec0ce846acb7034461c1e829a86c25415c5de389d158dc84ba7d4217614c04",
+        "platform": {
+          "architecture": "amd64",
+          "os": "linux"
+        }
+      },
+      {
+        "mediaType": "application/vnd.oci.image.manifest.v1+json",
+        "size": 838,
+        "digest": "sha256:911ce35ff6101f623ed2220c781db0f5c6f56e86ffede54166f0ffd60e951d5c",
+        "platform": {
+          "architecture": "unknown",
+          "os": "unknown"
+        }
+      }
+    ]
+  },
+  "runtimeEvidence": "Existing local Compose health, non-root UID and authenticated forwarding receipt is in verification.json; registry manifest access is not a new runtime test."
+}

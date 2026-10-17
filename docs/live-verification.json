@@ -1,0 +1,254 @@
+{
+  "sourceCommit": "9844ed1231024442fea100a4b4d496d21e89546c",
+  "url": "https://ding-ding-projects.github.io/clipboard-sync/",
+  "route": "isolated headless Chromium on Linux",
+  "startedAt": "2026-10-17T16:34:30.553105+00:00",
+  "checks": [
+    "Live bytes match source: index.html",
+    "Live bytes match source: guide.css",
+    "Live bytes match source: guide.js",
+    "Live bytes match source: images/workspace.png",
+    "Live bytes match source: api.postman_collection.json",
+    "All ten article/wiki destinations navigate with one visible article and correct active link at desktop and narrow widths",
+    "Checklist completion survives reload; reset clears every step and survives reload",
+    "Troubleshooting sync selection changes to the matching explanation",
+    "All twenty article/viewport states have no horizontal overflow; browser session has no JavaScript page errors"
+  ],
+  "artifacts": [
+    {
+      "path": "index.html",
+      "sha256": "a47b2fba5c12bbb13e4e0a6f47640cabd34500d94cdc3170cdd32cfb88f67ab1",
+      "liveMatchesLocal": true
+    },
+    {
+      "path": "guide.css",
+      "sha256": "f2c53615c684d7ae14d52315f39e7436edd7545bd2400869a6a5b55f00fe3122",
+      "liveMatchesLocal": true
+    },
+    {
+      "path": "guide.js",
+      "sha256": "af1f586acc350042d08438cf1558d9d3130b718f2550ac1e096247ed6cb43a22",
+      "liveMatchesLocal": true
+    },
+    {
+      "path": "images/workspace.png",
+      "sha256": "c5e9fd7f0a1483c7baf35a4125b9b7d2638065bf24f26225f863b7f8dbb36029",
+      "liveMatchesLocal": true
+    },
+    {
+      "path": "api.postman_collection.json",
+      "sha256": "5ba97f0d165cfc3bbc0ca4c220545c3209ff3ccac60636b2263539b18fe0cca9",
+      "liveMatchesLocal": true
+    }
+  ],
+  "articleMeasurements": [
+    {
+      "section": "start",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 1440,
+      "viewportWidth": 1440
+    },
+    {
+      "section": "phone",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 1440,
+      "viewportWidth": 1440
+    },
+    {
+      "section": "history",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 1440,
+      "viewportWidth": 1440
+    },
+    {
+      "section": "sync",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 1440,
+      "viewportWidth": 1440
+    },
+    {
+      "section": "hosting",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 1440,
+      "viewportWidth": 1440
+    },
+    {
+      "section": "privacy",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 1440,
+      "viewportWidth": 1440
+    },
+    {
+      "section": "troubleshooting",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 1440,
+      "viewportWidth": 1440
+    },
+    {
+      "section": "api",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 1440,
+      "viewportWidth": 1440
+    },
+    {
+      "section": "development",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 1440,
+      "viewportWidth": 1440
+    },
+    {
+      "section": "wiki",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 1440,
+      "viewportWidth": 1440
+    },
+    {
+      "section": "start",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 390,
+      "viewportWidth": 390
+    },
+    {
+      "section": "phone",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 390,
+      "viewportWidth": 390
+    },
+    {
+      "section": "history",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 390,
+      "viewportWidth": 390
+    },
+    {
+      "section": "sync",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 390,
+      "viewportWidth": 390
+    },
+    {
+      "section": "hosting",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 390,
+      "viewportWidth": 390
+    },
+    {
+      "section": "privacy",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 390,
+      "viewportWidth": 390
+    },
+    {
+      "section": "troubleshooting",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 390,
+      "viewportWidth": 390
+    },
+    {
+      "section": "api",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 390,
+      "viewportWidth": 390
+    },
+    {
+      "section": "development",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 390,
+      "viewportWidth": 390
+    },
+    {
+      "section": "wiki",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "visibleArticleCount": 1,
+      "scrollWidth": 390,
+      "viewportWidth": 390
+    }
+  ],
+  "nativeWindowsAcceptance": false,
+  "pageErrors": [],
+  "limitations": [
+    "Live website checks only; no native Windows clipboard or installer acceptance.",
+    "Visibility and active-link assertions wait for the hashchange handler; the prior immediate is_visible assertion could run before routing completed."
+  ],
+  "completedAt": "2026-10-17T16:34:34.061818+00:00",
+  "browserClosed": true
+}
