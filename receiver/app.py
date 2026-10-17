@@ -21,7 +21,7 @@ from PIL import Image
 from .native import Clipboard, check_image_size
 
 MAX_BYTES=25*1024*1024
-VERSION='0.1.0'
+from . import __version__ as VERSION
 
 def now(): return datetime.now(timezone.utc).isoformat()
 def safe_name(value):

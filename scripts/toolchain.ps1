@@ -46,8 +46,10 @@ function Get-Python {
 function Get-Node {
     $existing = Get-Command node.exe -ErrorAction SilentlyContinue
     if ($existing) {
-        & $existing.Source -e 'process.exit(Number(process.versions.node.split(".")[0])>=22?0:1)' 2>$null
-        if ($LASTEXITCODE -eq 0) { return Split-Path $existing.Source -Parent }
+        $nodeVersion = & $existing.Source --version
+        if ($LASTEXITCODE -eq 0 -and $nodeVersion -match '^v(\d+)\.' -and [int]$Matches[1] -ge 22) {
+            return Split-Path $existing.Source -Parent
+        }
     }
     $nodeRoot = Join-Path $script:ToolRoot 'node-v22.14.0-win-x64'
     if (!(Test-Path (Join-Path $nodeRoot 'node.exe'))) {

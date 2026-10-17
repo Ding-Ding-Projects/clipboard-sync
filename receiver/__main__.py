@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import webbrowser
 from .squirrel import handle_squirrel_events
+from . import __version__
 
 def main():
     if handle_squirrel_events():
@@ -10,7 +11,7 @@ def main():
     from .app import Receiver
     parser=argparse.ArgumentParser(description='Clipboard Sync Windows receiver')
     parser.add_argument('--squirrel-firstrun',action='store_true',help=argparse.SUPPRESS)
-    parser.add_argument('--version',action='version',version='0.1.0')
+    parser.add_argument('--version',action='version',version=__version__)
     parser.add_argument('--headless',action='store_true',help='Transport testing only; never writes a native clipboard')
     parser.add_argument('--port',type=int,default=5333)
     parser.add_argument('--host',default='0.0.0.0')
