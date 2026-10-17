@@ -58,6 +58,7 @@ class History:
     def __init__(self,path):
         self.path=Path(path); self.path.mkdir(parents=True,exist_ok=True)
         self.git('init','--quiet'); self.git('config','user.name','Clipboard Sync'); self.git('config','user.email','clipboard@localhost')
+        self.git('config','core.autocrlf','false'); self.git('config','commit.gpgsign','false')
         self.items=[]
         for p in self.path.glob('*/entry.json'):
             self.items.append(json.loads(p.read_text('utf-8')))

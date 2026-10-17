@@ -104,6 +104,8 @@ class RelayTests(unittest.IsolatedAsyncioTestCase):
 class ValidationTests(unittest.TestCase):
     def test_limits_and_invalid_payloads(self):
         cases = [None, [], {'type': 'text', 'text': 'a'*100001},
+                 {'type': 'text', 'text': 'bad\x00text'},
+                 {'type': 'file', 'name': 'a'*201, 'mime': 'text/plain', 'data': 'YQ=='},
                  {'type': 'file', 'name': '../bad', 'mime': 'text/plain', 'data': 'YQ=='},
                  {'type': 'file', 'name': 'CON.txt', 'mime': 'text/plain', 'data': 'YQ=='},
                  {'type': 'file', 'name': 'bad?.txt', 'mime': 'text/plain', 'data': 'YQ=='},

@@ -22,7 +22,7 @@ function Get-VerifiedFile([string]$Url, [string]$Name, [string]$Sha256) {
 }
 
 function Invoke-Checked([string]$Executable, [string[]]$Arguments) {
-    & $Executable @Arguments
+    & $Executable @Arguments | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "$Executable failed with exit code $LASTEXITCODE" }
 }
 

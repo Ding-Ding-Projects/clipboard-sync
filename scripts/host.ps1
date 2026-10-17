@@ -64,7 +64,7 @@ try {
         try { $check=Invoke-RestMethod ($url+'health') -TimeoutSec 2; if ($check.status -eq 'ok') { Write-Host "Verified host LAN endpoint: $url"; $lanVerified=$true } } catch {}
     }
     if (-not $lanVerified) { Write-Warning 'LAN health could not be verified. Check the selected network and existing firewall rules; external-computer reachability remains unverified.' }
-    Write-Host 'Computer sync URL: ws://HOST-IP:'$port'/ws/home . Use the same private token and room on each computer.'
+    Write-Host "Receiver Settings server URL: http://HOST-IP:$port . Set room separately (for example: home). Use the same private token and room on each computer."
     if ($logs) {
         $follow = $true
         while ($true) {
