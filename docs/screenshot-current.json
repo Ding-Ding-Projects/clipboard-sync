@@ -1,0 +1,38 @@
+{
+  "sourceCommit": "b8a9f07f10a58de670415af2dd202b239d11a15e",
+  "capturedAt": "2026-10-17T16:31:36.680592+00:00",
+  "route": "Linux headless Chromium, production Vite bundle served by actual headless receiver",
+  "screen": "History",
+  "language": "en",
+  "theme": "light",
+  "viewport": {
+    "width": 1440,
+    "height": 1000,
+    "deviceScaleFactor": 1
+  },
+  "image": {
+    "path": "docs/images/workspace.png",
+    "sha256": "c5e9fd7f0a1483c7baf35a4125b9b7d2638065bf24f26225f863b7f8dbb36029"
+  },
+  "buildCommand": "npm run build",
+  "artifactFiles": {
+    "dist/index.html": "17de78b3e01cfe28a79183c42b31617fcfbb7f742fba564c15a575a9014b9ec4",
+    "dist/assets/index-DH7G5nO5.js": "2dcbd8abca9c765c9ea5686656aa8566487dfbd5f725997009ad0a195da8592c",
+    "dist/assets/dm-sans-latin-ext-wght-normal-BOFOeGcA.woff2": "a5d38fe99f930275684999b462c7123faa063d9e44e73b4b241723d884aa0f49",
+    "dist/assets/index-D7QW5YTK.css": "2daecb38ee2bdba5d8613c69d493c1114999647009ff5eac2431dabaa3a38851",
+    "dist/assets/dm-sans-latin-wght-normal-Xz1IZZA0.woff2": "9fea608a947e67020c33cad9a6fe3d60c54119dfb8cff87768a8117a15ed7543"
+  },
+  "checks": [
+    "Three task-generated transfers persisted through authenticated HTTP API and rendered in History",
+    "Friendly device name Studio PC",
+    "No QR, token or private data path in captured page",
+    "No JavaScript page errors",
+    "No horizontal document overflow"
+  ],
+  "nativeWindowsVerified": false,
+  "limitations": [
+    "Headless transfers returned copied:false; this image does not prove native Windows clipboard behavior."
+  ],
+  "resourcesRemoved": true,
+  "visualInspection": "Raw capture inspected: History shows three task-generated records, Studio PC, English light theme; no credentials, QR, private paths or layout clipping visible."
+}
