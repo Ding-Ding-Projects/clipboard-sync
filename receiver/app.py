@@ -18,7 +18,7 @@ import uuid
 from urllib.parse import urlsplit, quote
 from aiohttp import web, ClientSession, WSMsgType
 from PIL import Image
-from .native import Clipboard
+from .native import Clipboard, check_image_size
 
 MAX_BYTES=25*1024*1024
 VERSION='0.1.0'
@@ -48,7 +48,9 @@ def validate(raw):
     mime=str(raw.get('mime','application/octet-stream'))[:200]
     if kind=='image':
         try:
-            with Image.open(io.BytesIO(data)) as im: im.verify()
+            with Image.open(io.BytesIO(data)) as im:
+                check_image_size(*im.size)
+                im.verify()
         except Exception: kind='file'
     return {'type':kind,'name':name,'mime':mime,'_bytes':data}
 
@@ -137,7 +139,7 @@ class Receiver:
         try:
             with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as s: s.connect(('192.0.2.1',80)); host=s.getsockname()[0]
         except OSError: host='127.0.0.1'
-        return {'deviceName':socket.gethostname(),'platform':sys.platform,'clipboardAvailable':self.clipboard.available,'phoneConnected':time.time()-self.phone_seen<60,'paused':self.settings['paused'],'pairUrl':f'http://{host}:{self.port}/send#token='+self.secrets['mobile'],'receivedToday':sum(x['createdAt'][:10]==now()[:10] for x in self.history.items),'historyCount':len(self.history.items),'lastCaptureError':self.capture_error,'captureWarnings':[self.capture_error] if self.capture_error else [],'sync':{**self.settings['sync'],'connected':self.connected,'error':self.error},'setupComplete':self.settings['setupComplete'],'version':VERSION}
+        return {'deviceName':self.settings.get('deviceName',socket.gethostname()),'platform':sys.platform,'clipboardAvailable':self.clipboard.available,'phoneConnected':time.time()-self.phone_seen<60,'paused':self.settings['paused'],'pairUrl':f'http://{host}:{self.port}/send#token='+self.secrets['mobile'],'receivedToday':sum(x['createdAt'][:10]==now()[:10] for x in self.history.items),'historyCount':len(self.history.items),'lastCaptureError':self.capture_error,'captureWarnings':[self.capture_error] if self.capture_error else [],'sync':{**self.settings['sync'],'connected':self.connected,'error':self.error},'setupComplete':self.settings['setupComplete'],'version':VERSION}
     async def accept(self,payload,source,broadcast=True,copy=True):
         async with self.lock:
             item,new=await asyncio.to_thread(self.history.add,payload,source)
@@ -146,8 +148,8 @@ class Receiver:
                 path=None
                 if payload['type']=='file':
                     folder=self.root/'files'/item['id']; folder.mkdir(parents=True,exist_ok=True); path=folder/payload['name']; path.write_bytes(payload['_bytes'])
-                copied=await asyncio.to_thread(self.clipboard.write,payload,path)
-                self.last_seq=self.clipboard.sequence()
+                copied,written_sequence=await asyncio.to_thread(self.clipboard.write,payload,path)
+                if copied: self.last_seq=written_sequence
             if new and broadcast and not self.settings['paused'] and self.ws and not self.ws.closed:
                 wire={k:v for k,v in payload.items() if k!='_bytes'}
                 if '_bytes' in payload: wire['data']=base64.b64encode(payload['_bytes']).decode()
@@ -170,6 +172,10 @@ class Receiver:
             raw=await r.json()
             if not isinstance(raw,dict): raise ValueError('Settings must be a JSON object')
             candidate=json.loads(json.dumps(self.settings)); candidate_secrets=dict(self.secrets)
+            if 'deviceName' in raw:
+                label=raw['deviceName']
+                if not isinstance(label,str) or not 1<=len(label)<=80 or not label.isprintable() or not label.strip(): raise ValueError('Device name must contain 1 to 80 printable characters')
+                candidate['deviceName']=label
             for k in ('paused','setupComplete'):
                 if k in raw:
                     if not isinstance(raw[k],bool): raise ValueError(k+' must be boolean')
@@ -264,11 +270,19 @@ class Receiver:
                         self.ws=ws; self.connected=True; self.error=''; delay=1
                         async for msg in ws:
                             if msg.type!=WSMsgType.TEXT: continue
-                            event=json.loads(msg.data)
-                            if event.get('type')!='clipboard' or event.get('origin')==self.secrets['device'] or event.get('id') in self.seen or self.settings['paused']: continue
-                            uuid.UUID(event['id']); self.seen.add(event['id'])
+                            try:
+                                event=json.loads(msg.data)
+                                if not isinstance(event,dict): raise ValueError('Invalid relay event')
+                                if event.get('type')!='clipboard': continue
+                                uuid.UUID(event['id']); uuid.UUID(event['origin'])
+                                if event['origin']==self.secrets['device'] or event['id'] in self.seen or self.settings['paused']: continue
+                                payload=validate(event['payload'])
+                            except (ValueError,TypeError,KeyError,AttributeError):
+                                self.error='An invalid relay event was ignored; connection remains active'
+                                continue
+                            await self.accept(payload,'Synced computer',broadcast=False)
+                            self.seen.add(event['id'])
                             if len(self.seen)>2048: self.seen={event['id']}
-                            await self.accept(validate(event['payload']),'Synced computer',broadcast=False)
                 except asyncio.CancelledError: raise
                 except Exception: self.error='Relay unavailable; local clipboard history remains active'
                 finally: self.connected=False; self.ws=None
