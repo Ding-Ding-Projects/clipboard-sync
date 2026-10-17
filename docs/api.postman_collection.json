@@ -1,0 +1,258 @@
+{
+  "info": {
+    "name": "Clipboard Sync API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "receiverUrl",
+      "value": "http://localhost:5333"
+    },
+    {
+      "key": "relayUrl",
+      "value": "http://localhost:8787"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "serverToken",
+      "value": ""
+    },
+    {
+      "key": "entryId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Receiver status",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{receiverUrl}}/api/status"
+      }
+    },
+    {
+      "name": "Phone availability",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{receiverUrl}}/api/phone"
+      }
+    },
+    {
+      "name": "Send text",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{receiverUrl}}/api/transfer",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"text\",\n  \"text\": \"Ready to paste\",\n  \"deviceName\": \"Phone\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "History",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{receiverUrl}}/api/history?type=all&q="
+      }
+    },
+    {
+      "name": "History detail",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{receiverUrl}}/api/history/{{entryId}}/detail"
+      }
+    },
+    {
+      "name": "Restore entry",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{receiverUrl}}/api/history/{{entryId}}/restore",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Download entry",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{receiverUrl}}/api/history/{{entryId}}/file"
+      }
+    },
+    {
+      "name": "Pause receiver",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{receiverUrl}}/api/settings",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"paused\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Configure sync",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{receiverUrl}}/api/settings",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sync\": {\n    \"enabled\": true,\n    \"url\": \"http://localhost:8787\",\n    \"room\": \"my-devices\",\n    \"token\": \"{{serverToken}}\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Reset pairing",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{receiverUrl}}/api/pair/reset",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Clear visible history",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{receiverUrl}}/api/history/clear",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"confirm\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Relay health",
+      "request": {
+        "method": "GET",
+        "url": "{{relayUrl}}/health"
+      }
+    }
+  ]
+}

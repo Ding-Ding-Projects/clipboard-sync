@@ -1,0 +1,92 @@
+name: Build and release
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: python -m pip install -r requirements.txt -r server-requirements.txt
+      - run: python -m unittest discover -s tests -v
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+  windows:
+    needs: test
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build portable Windows app
+        shell: cmd
+        run: build.bat /s
+      - name: Build unsigned per-user installer
+        shell: cmd
+        run: build-installer.bat /s
+      - name: Verify executable version and checksums
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = & .\release\ClipboardSync.exe --version
+          if ($LASTEXITCODE -ne 0 -or $version -notmatch '0.1.0') { throw 'Portable executable version smoke test failed.' }
+          Get-FileHash release/*.exe -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  $([IO.Path]::GetFileName($_.Path))" } | Set-Content release/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clipboard-sync-windows
+          path: release/*
+      - name: Publish normal release
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $tag = "v0.1.0-build.${{ github.run_number }}"
+          @'
+          Windows clipboard receiver, local Git history, QR phone transfers and realtime self-hosted sync.
+
+          Download ClipboardSync.exe for portable use or ClipboardSync-Setup.exe for a per-user installation. Both are unsigned. Windows native acceptance on a user-selected physical machine remains separate from these build checks. See the included documentation for LAN pairing and server setup.
+          '@ | Set-Content release-notes.txt
+          gh release create $tag release/* --target '${{ github.sha }}' --title "Clipboard Sync $tag" --notes-file release-notes.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed.' }
+          $release = gh release view $tag --json isDraft,isPrerelease,targetCommitish,assets | ConvertFrom-Json
+          if ($release.isDraft -or $release.isPrerelease -or $release.assets.Count -lt 3) { throw 'Release readback failed.' }
+  image:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: server.Dockerfile
+          push: true
+          tags: |
+            ghcr.io/ding-ding-projects/clipboard-sync-server:latest
+            ghcr.io/ding-ding-projects/clipboard-sync-server:${{ github.sha }}
