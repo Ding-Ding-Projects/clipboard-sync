@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>ClipboardSync</id>
+    <version>$version$</version>
+    <title>Clipboard Sync</title>
+    <authors>Ding-Ding Projects</authors>
+    <owners>Ding-Ding Projects</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Clipboard Sync Windows receiver. Unsigned Squirrel.Windows distribution.</description>
+    <projectUrl>https://github.com/Ding-Ding-Projects/clipboard-sync</projectUrl>
+    <copyright>Copyright Ding-Ding Projects</copyright>
+  </metadata>
+  <files>
+    <file src="release\ClipboardSync.exe" target="lib\net45\ClipboardSync.exe" />
+  </files>
+</package>
