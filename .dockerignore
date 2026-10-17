@@ -3,3 +3,5 @@
 !sync_server/*.py
 !server-requirements.txt
 !server.Dockerfile
+**/__pycache__
+**/*.pyc
