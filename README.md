@@ -6,15 +6,17 @@ Send text, images and files from a phone to the Windows clipboard. Save supporte
 
 ![Actual receiver history with task-owned text and file uploads](docs/images/workspace.png)
 
+[Capture provenance and historical screenshots](docs/screenshots-archive.md)
+
 ## Start on Windows
 
-1. Download **ClipboardSync.exe** for portable use, or **ClipboardSync-Setup.exe** for a per-user installation.
+1. Download **ClipboardSync.exe** for portable use, or **Setup.exe** for a per-user installation.
 2. Run it and keep the receiver window open. The local browser workspace opens automatically.
 3. Complete setup and allow access on your private network when Windows asks.
 4. Scan its QR code from your phone on the same Wi-Fi.
 5. Send something, then paste on Windows with **Ctrl+V**.
 
-The executable and installer are unsigned. Git is bundled. **ClipboardSync-Guide.exe** provides the complete guide offline.
+The executable and installer are unsigned. Git is bundled. Squirrel installation may trigger an unknown-publisher or SmartScreen warning. **ClipboardSync-Guide.exe** provides the complete guide offline.
 
 ## Local clipboard history
 
@@ -34,7 +36,7 @@ On other Docker hosts, create a local .env containing a random SERVER_TOKEN of a
 
 ## Build
 
-Run **build.bat /s** and **build-installer.bat /s** on Windows. These entrypoints obtain missing project-local Python, Node and portable Git, verify pinned download checksums, install dependencies and build the artifacts. The installer uses Inno Setup and a per-user destination. No administrator rights are required for these user-scoped tools.
+Run **build.bat /s** and **build-installer.bat /s** on Windows. These entrypoints obtain missing project-local Python, Node and portable Git, verify pinned download checksums, install dependencies and build the artifacts. The installer uses genuine Squirrel.Windows and a per-user destination. It produces Setup.exe, RELEASES and a full .nupkg; portable app and offline guide executables are also included. No administrator rights are required for these user-scoped tools.
 
 Without /s, the build offers to launch after success. **start.bat** builds if needed and opens the receiver.
 
@@ -56,3 +58,5 @@ Supported: Unicode text, bitmap images and ordinary files. Binary items are limi
 Tests cover access control, validation, local Git persistence, watcher simulation, malformed-message recovery, relay forwarding, room isolation and two real receivers syncing through the relay. A non-root Docker container and Compose health/forwarding were exercised. Actual built browser checks and genuine captures are in **design/evidence/**.
 
 Windows clipboard behavior, firewall setup, installer operation and fresh-machine acceptance require separate Windows execution. Linux and browser checks do not establish those results.
+
+Build and publication dependencies are inventoried in [build documentation](docs/build-inventory.md). Actions builds and publishes without tests or lint; local results are recorded separately. [Native Windows acceptance](docs/native-acceptance.md) lists the remaining physical-machine checks.

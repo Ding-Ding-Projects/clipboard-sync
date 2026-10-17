@@ -30,5 +30,12 @@
     ],
     "ownedResourcesRemoved": true
   },
-  "powershellSyntax": "build.ps1, host.ps1 and toolchain.ps1 parsed successfully with PowerShell 7.5.3 on Linux; Windows execution unverified"
+  "powershellSyntax": "build.ps1, host.ps1 and toolchain.ps1 parsed successfully with PowerShell 7.5.3 on Linux; Windows execution unverified",
+  "resumedValidation": {
+    "sourceCommit": "b8a9f07f10a58de670415af2dd202b239d11a15e",
+    "automatedTestsPassed": 27,
+    "frontendBuild": "passed",
+    "localizationEvidence": "design/evidence/localization-checks.json",
+    "nativeWindowsAcceptance": false
+  }
 }

@@ -67,13 +67,14 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.RELEASE_TOKEN || secrets.ORG_TOKEN || secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/build-push-action@v6
         id: image
         with:
           context: .
           file: server.Dockerfile
           push: true
+          labels: org.opencontainers.image.source=https://github.com/Ding-Ding-Projects/clipboard-sync
           tags: |
             ghcr.io/ding-ding-projects/clipboard-sync-server:latest
             ghcr.io/ding-ding-projects/clipboard-sync-server:${{ github.sha }}

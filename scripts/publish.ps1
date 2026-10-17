@@ -42,14 +42,14 @@ Guide: https://ding-ding-projects.github.io/clipboard-sync/
 "@
 # Code-name metadata is optional and comes only from the public authority.
 try {
-    $catalog = Invoke-RestMethod 'https://raw.githubusercontent.com/Ding-Ding-Projects/dim-sum-photos/main/catalog/index.json'
+    $catalog = (Invoke-GitHub @('api','repos/Ding-Ding-Projects/dim-sum-photos/contents/catalog/index.json','-H','Accept: application/vnd.github.raw+json')) | ConvertFrom-Json
     $dishes = if ($catalog.items) { $catalog.items } elseif ($catalog.dishes) { $catalog.dishes } else { @() }
     $previous = (Invoke-GitHub @('api',"repos/$env:GITHUB_REPOSITORY/releases?per_page=100",'--paginate')) -join "`n"
     $photos = (Invoke-GitHub @('api','repos/Ding-Ding-Projects/dim-sum-photos/releases?per_page=100')) | ConvertFrom-Json
     $selected = $null
     foreach ($dish in $dishes) {
         if (!$dish.name.en -or !$dish.name.zhHant -or $previous.Contains([string]$dish.name.en)) { continue }
-        $asset = @($photos | Where-Object { $_.tag_name -like 'catalog-v1*' } | ForEach-Object assets | Where-Object { $_.name -eq "$($dish.id).png" -or $_.name -eq "$($dish.id).webp" } | Select-Object -First 1)
+        $asset = @($photos | Where-Object { $_.tag_name -like 'catalog-v1*' } | ForEach-Object assets | Where-Object { $_.name -eq [IO.Path]::GetFileName([string]$dish.image.path) } | Select-Object -First 1)
         if ($asset.Count) { $selected = "$($dish.name.en) · $($dish.name.zhHant)"; $notes += "`n`nCode name: $selected. [Public photo]($($asset[0].browser_download_url))."; break }
     }
     if (!$selected) { $notes += "`n`nNo unused dish with a verified published photo was resolved; this release uses its version alone." }
