@@ -1,0 +1,1 @@
+{"name":"clipboard-sync-ui","private":true,"version":"0.1.0","type":"module","scripts":{"build":"vite build web --outDir ../dist --emptyOutDir","dev":"vite web --host 0.0.0.0","preview":"vite preview web --outDir ../dist --host 0.0.0.0"},"dependencies":{"@material/web":"^2.4.1","@fontsource-variable/dm-sans":"^5.2.8","qrcode":"^1.5.4"},"devDependencies":{"vite":"^6.1.0"}}
