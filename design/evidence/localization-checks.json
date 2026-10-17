@@ -1,0 +1,148 @@
+{
+  "sourceCommit": "2a88dbf80ce1e56aeb8034585b59b311d84dc433",
+  "capturedAt": "2026-10-17T16:29:56.917259+00:00",
+  "route": "linux-playwright-headless",
+  "buildCommand": "npm run build",
+  "artifactFiles": {
+    "dist/index.html": "17de78b3e01cfe28a79183c42b31617fcfbb7f742fba564c15a575a9014b9ec4",
+    "dist/assets/index-DH7G5nO5.js": "2dcbd8abca9c765c9ea5686656aa8566487dfbd5f725997009ad0a195da8592c",
+    "dist/assets/dm-sans-latin-ext-wght-normal-BOFOeGcA.woff2": "a5d38fe99f930275684999b462c7123faa063d9e44e73b4b241723d884aa0f49",
+    "dist/assets/index-D7QW5YTK.css": "2daecb38ee2bdba5d8613c69d493c1114999647009ff5eac2431dabaa3a38851",
+    "dist/assets/dm-sans-latin-wght-normal-Xz1IZZA0.woff2": "9fea608a947e67020c33cad9a6fe3d60c54119dfb8cff87768a8117a15ed7543"
+  },
+  "captures": [
+    {
+      "path": "phone-offline-both.png",
+      "sha256": "589fc6da8221a5c7dffb4f8ba5ba5d3f80fb107d94660b97d06a3db6ab376f62",
+      "screen": "phone file sender",
+      "state": "offline",
+      "language": "both",
+      "theme": "light",
+      "viewport": {
+        "width": 320,
+        "height": 1000,
+        "scale": 1
+      }
+    },
+    {
+      "path": "phone-offline-en.png",
+      "sha256": "35e882268026a18046bf1613ab36c9c18b940b4093eb0fe8f4ac7cf1706d2a2f",
+      "screen": "phone file sender",
+      "state": "offline",
+      "language": "en",
+      "theme": "light",
+      "viewport": {
+        "width": 320,
+        "height": 1000,
+        "scale": 1
+      }
+    },
+    {
+      "path": "phone-offline-zh-HK.png",
+      "sha256": "37327b029ddec6a5b11b37c5320689e05ff037556760f718451c5e43b182abfd",
+      "screen": "phone file sender",
+      "state": "offline",
+      "language": "zh-HK",
+      "theme": "light",
+      "viewport": {
+        "width": 320,
+        "height": 1000,
+        "scale": 1
+      }
+    }
+  ],
+  "results": [
+    {
+      "language": "en",
+      "width": 320,
+      "checks": [
+        "localized surface text",
+        "no template interpolation leaks",
+        "no horizontal overflow",
+        "draft survives navigation",
+        "offline setup blocked",
+        "language persisted after reload",
+        "phone file tab opens",
+        "offline send blocked"
+      ],
+      "pageErrors": []
+    },
+    {
+      "language": "en",
+      "width": 1440,
+      "checks": [
+        "localized surface text",
+        "no template interpolation leaks",
+        "no horizontal overflow",
+        "draft survives navigation",
+        "offline setup blocked",
+        "language persisted after reload",
+        "phone file tab opens",
+        "offline send blocked"
+      ],
+      "pageErrors": []
+    },
+    {
+      "language": "zh-HK",
+      "width": 320,
+      "checks": [
+        "localized surface text",
+        "no template interpolation leaks",
+        "no horizontal overflow",
+        "draft survives navigation",
+        "offline setup blocked",
+        "language persisted after reload",
+        "phone file tab opens",
+        "offline send blocked"
+      ],
+      "pageErrors": []
+    },
+    {
+      "language": "zh-HK",
+      "width": 1440,
+      "checks": [
+        "localized surface text",
+        "no template interpolation leaks",
+        "no horizontal overflow",
+        "draft survives navigation",
+        "offline setup blocked",
+        "language persisted after reload",
+        "phone file tab opens",
+        "offline send blocked"
+      ],
+      "pageErrors": []
+    },
+    {
+      "language": "both",
+      "width": 320,
+      "checks": [
+        "localized surface text",
+        "no template interpolation leaks",
+        "no horizontal overflow",
+        "draft survives navigation",
+        "offline setup blocked",
+        "language persisted after reload",
+        "phone file tab opens",
+        "offline send blocked"
+      ],
+      "pageErrors": []
+    },
+    {
+      "language": "both",
+      "width": 1440,
+      "checks": [
+        "localized surface text",
+        "no template interpolation leaks",
+        "no horizontal overflow",
+        "draft survives navigation",
+        "offline setup blocked",
+        "language persisted after reload",
+        "phone file tab opens",
+        "offline send blocked"
+      ],
+      "pageErrors": []
+    }
+  ],
+  "scope": "Offline real production bundle; no API mocks or DOM injection. No native Windows clipboard assertion.",
+  "privacy": "No credentials, QR codes, records, private paths or device identities supplied."
+}
