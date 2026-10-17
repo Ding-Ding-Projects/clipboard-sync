@@ -32,10 +32,13 @@ def safe_name(value):
     return name
 
 def validate(raw):
+    if not isinstance(raw,dict): raise ValueError('Content must be a JSON object')
     kind=raw.get('type')
     if kind=='text':
         text=raw.get('text')
         if not isinstance(text,str) or len(text)>100000: raise ValueError('Text must contain at most 100,000 characters')
+        if '\x00' in text: raise ValueError('Text cannot contain NUL characters')
+        text.encode('utf-8')
         return {'type':'text','text':text}
     if kind not in ('image','file'): raise ValueError('Unsupported content type')
     name=safe_name(raw.get('name'))
@@ -63,7 +66,8 @@ class History:
         except subprocess.CalledProcessError as e: raise RuntimeError('Local Git history update failed') from e
     def add(self,payload,source):
         data=payload['text'].encode('utf-8') if payload['type']=='text' else payload['_bytes']
-        digest=hashlib.sha256(payload['type'].encode()+b'\0'+data).hexdigest()
+        identity=json.dumps([payload['type'],payload.get('name',''),payload.get('mime','')],ensure_ascii=False).encode()
+        digest=hashlib.sha256(identity+b'\0'+data).hexdigest()
         if self.items and self.items[0]['digest']==digest: return self.items[0],False
         ident=str(uuid.uuid4()); folder=self.path/ident; folder.mkdir()
         item={'id':ident,'type':payload['type'],'name':payload.get('name','Text'), 'mime':payload.get('mime','text/plain'), 'preview':payload.get('text',payload.get('name',''))[:200], 'size':len(data),'createdAt':now(),'source':str(source)[:100],'status':'saved','digest':digest}
@@ -100,7 +104,7 @@ class Receiver:
         self.settings=json.loads(self.config_path.read_text()) if self.config_path.exists() else {'paused':False,'setupComplete':False,'sync':{'enabled':False,'url':'','room':'default'}}
         self.secrets=json.loads(self.secret_path.read_text()) if self.secret_path.exists() else {'admin':secrets.token_urlsafe(32),'mobile':secrets.token_urlsafe(32),'device':str(uuid.uuid4()),'relay':''}
         self.save(); self.clipboard=Clipboard(headless); self.history=History(self.root/'history'); self.lock=asyncio.Lock()
-        self.port=port; self.phone_seen=0; self.connected=False; self.error=''; self.ws=None; self.last_seq=self.clipboard.sequence(); self.seen=set(); self.tasks=[]
+        self.port=port; self.phone_seen=0; self.connected=False; self.error=''; self.capture_error=''; self.ws=None; self.last_seq=self.clipboard.sequence(); self.seen=set(); self.tasks=[]
         self.dist=Path(dist) if dist else Path(getattr(sys,'_MEIPASS',Path(__file__).resolve().parent.parent))/'dist'
         self.app=web.Application(client_max_size=36*1024*1024,middlewares=[self.middleware])
         self.app.router.add_route('*','/api/{tail:.*}',self.api)
@@ -133,7 +137,7 @@ class Receiver:
         try:
             with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as s: s.connect(('192.0.2.1',80)); host=s.getsockname()[0]
         except OSError: host='127.0.0.1'
-        return {'deviceName':socket.gethostname(),'platform':sys.platform,'clipboardAvailable':self.clipboard.available,'phoneConnected':time.time()-self.phone_seen<60,'paused':self.settings['paused'],'pairUrl':f'http://{host}:{self.port}/send#token='+self.secrets['mobile'],'receivedToday':sum(x['createdAt'][:10]==now()[:10] for x in self.history.items),'historyCount':len(self.history.items),'sync':{**self.settings['sync'],'connected':self.connected,'error':self.error},'setupComplete':self.settings['setupComplete'],'version':VERSION}
+        return {'deviceName':socket.gethostname(),'platform':sys.platform,'clipboardAvailable':self.clipboard.available,'phoneConnected':time.time()-self.phone_seen<60,'paused':self.settings['paused'],'pairUrl':f'http://{host}:{self.port}/send#token='+self.secrets['mobile'],'receivedToday':sum(x['createdAt'][:10]==now()[:10] for x in self.history.items),'historyCount':len(self.history.items),'lastCaptureError':self.capture_error,'captureWarnings':[self.capture_error] if self.capture_error else [],'sync':{**self.settings['sync'],'connected':self.connected,'error':self.error},'setupComplete':self.settings['setupComplete'],'version':VERSION}
     async def accept(self,payload,source,broadcast=True,copy=True):
         async with self.lock:
             item,new=await asyncio.to_thread(self.history.add,payload,source)
@@ -144,7 +148,7 @@ class Receiver:
                     folder=self.root/'files'/item['id']; folder.mkdir(parents=True,exist_ok=True); path=folder/payload['name']; path.write_bytes(payload['_bytes'])
                 copied=await asyncio.to_thread(self.clipboard.write,payload,path)
                 self.last_seq=self.clipboard.sequence()
-            if new and broadcast and self.ws and not self.ws.closed:
+            if new and broadcast and not self.settings['paused'] and self.ws and not self.ws.closed:
                 wire={k:v for k,v in payload.items() if k!='_bytes'}
                 if '_bytes' in payload: wire['data']=base64.b64encode(payload['_bytes']).decode()
                 try: await self.ws.send_json({'type':'clipboard','id':str(uuid.uuid4()),'origin':self.secrets['device'],'createdAt':now(),'payload':wire})
@@ -164,25 +168,43 @@ class Receiver:
             return web.json_response({'items':items[:100],'total':len(items)})
         if tail=='settings' and method=='POST':
             raw=await r.json()
+            if not isinstance(raw,dict): raise ValueError('Settings must be a JSON object')
+            candidate=json.loads(json.dumps(self.settings)); candidate_secrets=dict(self.secrets)
             for k in ('paused','setupComplete'):
                 if k in raw:
                     if not isinstance(raw[k],bool): raise ValueError(k+' must be boolean')
-                    self.settings[k]=raw[k]
+                    candidate[k]=raw[k]
             if 'sync' in raw:
-                sync=raw['sync']; current=dict(self.settings['sync'])
+                sync=raw['sync']
+                if not isinstance(sync,dict): raise ValueError('Sync settings must be a JSON object')
+                current=candidate['sync']
                 for k in ('enabled','url','room'):
                     if k in sync: current[k]=sync[k]
                 if not isinstance(current['enabled'],bool): raise ValueError('Sync enabled must be boolean')
-                if current['url'] and (urlsplit(current['url']).scheme not in ('http','https','ws','wss') or urlsplit(current['url']).username or urlsplit(current['url']).query): raise ValueError('Invalid relay URL')
-                if not re.fullmatch(r'[A-Za-z0-9_-]{1,64}',current['room']): raise ValueError('Invalid room')
-                self.settings['sync']=current
-                if sync.get('token'): self.secrets['relay']=str(sync['token'])
-                if self.ws: await self.ws.close()
-            self.save(); return web.json_response(self.status(r))
+                url=current['url']
+                if not isinstance(url,str): raise ValueError('Invalid relay URL')
+                if url:
+                    parsed=urlsplit(url)
+                    if (parsed.scheme not in ('http','https','ws','wss') or not parsed.hostname or not parsed.netloc or parsed.username is not None or parsed.password is not None or parsed.query or parsed.fragment or any(c.isspace() or ord(c)<32 for c in url)):
+                        raise ValueError('Invalid relay URL')
+                    try: parsed.port
+                    except ValueError: raise ValueError('Invalid relay port')
+                if not isinstance(current['room'],str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}',current['room']): raise ValueError('Invalid room')
+                if 'token' in sync and not isinstance(sync['token'],str): raise ValueError('Invalid relay token')
+                if sync.get('token'): candidate_secrets['relay']=sync['token']
+            old_settings,old_secrets=self.settings,self.secrets
+            self.settings,self.secrets=candidate,candidate_secrets
+            try: self.save()
+            except Exception:
+                self.settings,self.secrets=old_settings,old_secrets
+                raise
+            if 'sync' in raw and self.ws: await self.ws.close()
+            return web.json_response(self.status(r))
         if tail=='pair/reset' and method=='POST':
             self.secrets['mobile']=secrets.token_urlsafe(32); self.phone_seen=0; self.save(); return web.json_response(self.status(r))
         if tail=='history/clear' and method=='POST':
-            if (await r.json()).get('confirm') is not True: raise ValueError('Explicit confirmation required')
+            confirmation=await r.json()
+            if not isinstance(confirmation,dict) or confirmation.get('confirm') is not True: raise ValueError('Explicit confirmation required')
             async with self.lock: await asyncio.to_thread(self.history.clear)
             return web.json_response({'ok':True,'message':'Visible history cleared. Previous content remains in local Git commits.'})
         match=re.fullmatch(r'history/([0-9a-f-]{36})/(restore|file|detail)',tail)
@@ -215,14 +237,20 @@ class Receiver:
             try:
                 async with self.lock:
                     payloads=await asyncio.to_thread(self.clipboard.read); self.last_seq=seq
+                warnings=[]
+                if not payloads: warnings.append('This clipboard change has no supported text, bitmap, or file-drop content.')
                 for raw in payloads:
                     if '_path' in raw:
                         p=Path(raw['_path'])
-                        if not p.is_file() or p.stat().st_size>MAX_BYTES: continue
+                        if not p.is_file():
+                            warnings.append('A directory or unavailable file could not be captured.'); continue
+                        if p.stat().st_size>MAX_BYTES:
+                            warnings.append('A clipboard file larger than 25 MiB could not be captured.'); continue
                         raw={'type':'file','name':p.name,'_bytes':await asyncio.to_thread(p.read_bytes)}
                     await self.accept(validate(raw),'This computer',copy=False)
-                self.error=''
-            except Exception: self.error='Could not capture clipboard content; retrying on next change'
+                self.capture_error=' '.join(warnings)
+            except Exception as exc:
+                self.capture_error='Could not capture this clipboard change: '+(str(exc) if isinstance(exc,ValueError) else 'clipboard access or local history failed')
     async def relay(self):
         delay=1
         async with ClientSession() as session:

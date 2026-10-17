@@ -90,6 +90,40 @@ class ReceiverTests(unittest.IsolatedAsyncioTestCase):
         await asyncio.sleep(.5)
         self.assertEqual(len(self.receiver.history.items),2)
 
+    async def test_settings_validation_is_transactional(self):
+        import copy
+        original=copy.deepcopy(self.receiver.settings)
+        for url in ('http://','https://user:pass@host','https://host/#secret','https://host/\npath','https://host:bad'):
+            response=await self.client.post('/api/settings',headers=self.admin,json={'paused':True,'setupComplete':True,'sync':{'url':url}})
+            self.assertEqual(response.status,400)
+            self.assertEqual(self.receiver.settings,original)
+        response=await self.client.post('/api/transfer',headers=self.admin,json=[])
+        self.assertEqual(response.status,400)
+    async def test_same_bytes_different_filename_retained(self):
+        for name in ('one.txt','two.txt'):
+            await self.client.post('/api/transfer',headers=self.admin,json={'type':'file','name':name,'data':'YQ=='})
+        self.assertEqual(len(self.receiver.history.items),2)
+    async def test_unsupported_capture_is_visible(self):
+        class UnsupportedClipboard:
+            available=True
+            def sequence(self): return 1
+            def read(self): return []
+        self.receiver.clipboard=UnsupportedClipboard()
+        await asyncio.sleep(.5)
+        status=await (await self.client.get('/api/status',headers=self.admin)).json()
+        self.assertIn('no supported',status['lastCaptureError'])
+        self.assertTrue(status['captureWarnings'])
+    async def test_pause_suppresses_restore_broadcast(self):
+        class Socket:
+            closed=False
+            messages=[]
+            async def send_json(self,event): self.messages.append(event)
+        ws=Socket(); self.receiver.ws=ws
+        self.receiver.settings['paused']=True
+        await self.receiver.accept({'type':'text','text':'restore'},'Restore')
+        self.assertEqual(ws.messages,[])
+        self.receiver.ws=None
+
     async def test_validation(self):
         for raw in ({'type':'text','text':'x'*100001},{'type':'file','name':'../x','data':''},{'type':'file','data':'!!'}):
             with self.assertRaises(ValueError): validate(raw)

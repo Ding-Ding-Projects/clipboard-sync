@@ -1,0 +1,7 @@
+The receiver stores clipboard entries in a local Git repository and never pushes it. Clearing visible history creates a deletion commit; earlier content remains recoverable in Git history. Settings, pairing credentials, and relay credentials are stored outside that repository. Windows restricts the application data directory to the current user.
+
+Native capture supports Unicode text, DIB/DIBV5 bitmaps, and regular files from file-drop clipboard data. Text is limited to 100,000 characters and individual files to 25 MiB. Directories, unavailable files, unsupported native clipboard formats, and capture failures appear in the admin status `lastCaptureError` and `captureWarnings` fields. The watcher polls the Windows clipboard sequence number every 400 ms; intermediate changes that occur between polls may be missed. Custom application formats are not retained. Received files are copied into managed storage and never executed.
+
+Relay synchronization is live while connected. Offline changes remain in local history and are not queued for later relay delivery. Pausing prevents automatic capture and relay publication; explicit history restore still writes the local clipboard.
+
+Linux `--headless` mode verifies HTTP and relay transport and always returns `copied:false`. The automated clipboard watcher tests use a fake clipboard. Native clipboard ownership, DIB conversion, file-drop interoperability, and Windows ACL behavior require validation on a real Windows host before native behavior is considered verified.
