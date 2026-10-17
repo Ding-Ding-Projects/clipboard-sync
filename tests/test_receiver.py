@@ -48,6 +48,7 @@ class ReceiverTests(unittest.IsolatedAsyncioTestCase):
         async def relay(request):
             self.assertEqual(request.headers['Authorization'],'Bearer test-relay-token')
             ws=web.WebSocketResponse(); await ws.prepare(request)
+            await ws.send_json({'type':'clipboard','id':str(uuid.uuid4()),'origin':str(uuid.uuid4()),'payload':{'type':'unknown'}})
             await ws.send_json({'type':'clipboard','id':str(uuid.uuid4()),'origin':str(uuid.uuid4()),'createdAt':'2026-01-01T00:00:00Z','payload':{'type':'text','text':'remote content'}})
             received.set()
             async for msg in ws: messages.append(msg.data)
@@ -76,7 +77,7 @@ class ReceiverTests(unittest.IsolatedAsyncioTestCase):
             def sequence(self): return self.seq
             def read(self): return [self.payload]
             def write(self,payload,path=None):
-                self.payload=payload; self.seq+=1; return True
+                self.payload=payload; self.seq+=1; return True,self.seq
         fake=FakeClipboard(); self.receiver.clipboard=fake
         result=await (await self.client.post('/api/transfer',headers=self.admin,json={'type':'text','text':'phone edit'})).json()
         self.assertTrue(result['copied'])
@@ -123,6 +124,37 @@ class ReceiverTests(unittest.IsolatedAsyncioTestCase):
         await self.receiver.accept({'type':'text','text':'restore'},'Restore')
         self.assertEqual(ws.messages,[])
         self.receiver.ws=None
+
+    async def test_external_copy_immediately_after_native_write_is_captured(self):
+        class RacingClipboard:
+            available=True
+            seq=0
+            def sequence(self): return self.seq
+            def write(self,payload,path=None):
+                self.seq=2
+                return True,1
+            def read(self): return [{'type':'text','text':'external copy after native write'}]
+        self.receiver.clipboard=RacingClipboard()
+        await self.client.post('/api/transfer',headers=self.admin,json={'type':'text','text':'phone edit'})
+        self.assertEqual(self.receiver.last_seq,1)
+        await asyncio.sleep(.5)
+        self.assertEqual(len(self.receiver.history.items),2)
+        self.assertEqual(self.receiver.history.items[0]['preview'],'external copy after native write')
+    async def test_native_image_dimension_bounds(self):
+        from receiver.native import check_image_size
+        check_image_size(1920,1080)
+        for dimensions in ((0,10),(20000,10),(6000,6000)):
+            with self.assertRaises(ValueError): check_image_size(*dimensions)
+
+    async def test_friendly_device_name(self):
+        response=await self.client.post('/api/settings',headers=self.admin,json={'deviceName':'Living room PC'})
+        self.assertEqual(response.status,200)
+        self.assertEqual((await response.json())['deviceName'],'Living room PC')
+        for label in ('','x'*81,'name\n'):
+            response=await self.client.post('/api/settings',headers=self.admin,json={'deviceName':label})
+            self.assertEqual(response.status,400)
+        status=await (await self.client.get('/api/status',headers=self.admin)).json()
+        self.assertEqual(status['deviceName'],'Living room PC')
 
     async def test_validation(self):
         for raw in ({'type':'text','text':'x'*100001},{'type':'file','name':'../x','data':''},{'type':'file','data':'!!'}):

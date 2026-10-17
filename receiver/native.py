@@ -8,6 +8,13 @@ import threading
 import time
 from PIL import Image
 
+MAX_DIB_BYTES=100*1024*1024
+MAX_IMAGE_PIXELS=25_000_000
+
+def check_image_size(width,height):
+    if width<=0 or height<=0 or width>16384 or height>16384 or width*height>MAX_IMAGE_PIXELS:
+        raise ValueError('Clipboard bitmap exceeds the supported 25 million pixels or 16,384 pixel dimension limit')
+
 class Clipboard:
     def __init__(self, headless=False):
         self.available = os.name == 'nt' and not headless
@@ -49,11 +56,12 @@ class Clipboard:
         raise OSError('Windows clipboard is busy; try again')
 
     def write(self, payload, path=None):
-        if not self.available: return False
+        if not self.available: return False, None
         if payload['type'] == 'text':
             fmt, data = 13, (payload['text']+'\0').encode('utf-16-le')
         elif payload['type'] == 'image':
             with Image.open(io.BytesIO(payload['_bytes'])) as im:
+                check_image_size(*im.size)
                 buf=io.BytesIO(); im.convert('RGB').save(buf, 'BMP'); data=buf.getvalue()[14:]
             fmt=8
         else:
@@ -70,10 +78,11 @@ class Clipboard:
                 if not self.u.EmptyClipboard() or not self.u.SetClipboardData(fmt,handle):
                     raise OSError('Windows rejected clipboard data')
                 handle=None
+                written_sequence=self.u.GetClipboardSequenceNumber()
             finally:
                 if handle: self.k.GlobalFree(handle)
                 self.u.CloseClipboard(); self.u.DestroyWindow(self.window)
-        return True
+        return True, written_sequence
 
     def read(self):
         if not self.available: return []
@@ -82,26 +91,42 @@ class Clipboard:
             try:
                 if self.u.IsClipboardFormatAvailable(15):
                     h=self.u.GetClipboardData(15); paths=[]
+                    if self.k.GlobalSize(h)>1024*1024: raise ValueError('Clipboard file list exceeds 1 MiB')
+                    if self.s.DragQueryFileW(h,0xffffffff,None,0)>1000: raise ValueError('Clipboard file list exceeds 1,000 entries')
                     for i in range(self.s.DragQueryFileW(h,0xffffffff,None,0)):
-                        n=self.s.DragQueryFileW(h,i,None,0); buf=ctypes.create_unicode_buffer(n+1)
+                        n=self.s.DragQueryFileW(h,i,None,0)
+                        if n>32767: raise ValueError('Clipboard file path exceeds 32,767 characters')
+                        buf=ctypes.create_unicode_buffer(n+1)
                         self.s.DragQueryFileW(h,i,buf,n+1); paths.append(buf.value)
                     return [{'type':'file','_path':p} for p in paths]
                 for fmt in (13,8,17):
                     if not self.u.IsClipboardFormatAvailable(fmt): continue
-                    h=self.u.GetClipboardData(fmt); ptr=self.k.GlobalLock(h)
+                    h=self.u.GetClipboardData(fmt)
+                    size=self.k.GlobalSize(h)
+                    if size>(400002 if fmt==13 else MAX_DIB_BYTES): raise ValueError('Clipboard text or bitmap exceeds the supported memory limit')
+                    if size<2: raise ValueError('Clipboard allocation is empty or invalid')
+                    ptr=self.k.GlobalLock(h)
                     if not ptr: continue
                     try:
-                        if fmt==13: return [{'type':'text','text':ctypes.wstring_at(ptr)}]
-                        dib=ctypes.string_at(ptr,self.k.GlobalSize(h))
+                        if fmt==13:
+                            text=ctypes.string_at(ptr,size).decode('utf-16-le').split('\0',1)[0]
+                            return [{'type':'text','text':text}]
+                        dib=ctypes.string_at(ptr,size)
                     finally: self.k.GlobalUnlock(h)
+                    if len(dib)<40: raise ValueError('Clipboard bitmap header is incomplete')
                     header=struct.unpack_from('<I',dib)[0]
+                    if header<40 or header>len(dib): raise ValueError('Unsupported clipboard bitmap header')
+                    width,height=struct.unpack_from('<ii',dib,4)
+                    check_image_size(width,abs(height))
                     bits=struct.unpack_from('<H',dib,14)[0]
                     colors=struct.unpack_from('<I',dib,32)[0] if header>=40 else 0
                     offset=14+header+(colors or (1<<bits if bits<=8 else 0))*4
                     if header==40 and struct.unpack_from('<I',dib,16)[0]==3: offset+=12
                     bmp=b'BM'+struct.pack('<IHHI',len(dib)+14,0,0,offset)+dib
                     with Image.open(io.BytesIO(bmp)) as im:
+                        check_image_size(*im.size)
                         out=io.BytesIO(); im.save(out,'PNG')
+                    if out.tell()>25*1024*1024: raise ValueError('Clipboard bitmap exceeds 25 MiB after PNG conversion')
                     return [{'type':'image','name':'Clipboard.png','mime':'image/png','_bytes':out.getvalue()}]
                 return []
             finally: self.u.CloseClipboard(); self.u.DestroyWindow(self.window)
