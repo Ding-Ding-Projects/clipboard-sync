@@ -65,3 +65,23 @@ function Get-PortableGit {
     }
     return $gitRoot
 }
+
+function Get-SquirrelTools {
+    # Both downloads use canonical publishers and fixed SHA-256 values. No signer is invoked.
+    $nuget = Get-VerifiedFile 'https://dist.nuget.org/win-x86-commandline/v6.14.0/nuget.exe' 'nuget-6.14.0.exe' '92dbed160ddee0f64b901e907439e021211b428e57c089ecc12fc38dcc4bd9a5'
+    $package = Get-VerifiedFile 'https://api.nuget.org/v3-flatcontainer/squirrel.windows/2.0.1/squirrel.windows.2.0.1.nupkg' 'squirrel.windows.2.0.1.nupkg' '923e18abb4fd50b5a4878a39dbcd042ed3f7eb68fc0f82c0955cd5380c921ac7'
+    $squirrelRoot = Join-Path $script:ToolRoot 'squirrel.windows.2.0.1'
+    # Re-extract from the verified archive rather than trusting an old executable cache.
+    $zip = Join-Path $script:ToolRoot 'squirrel.windows.2.0.1.zip'
+    Copy-Item -LiteralPath $package -Destination $zip -Force
+    Expand-Archive -LiteralPath $zip -DestinationPath $squirrelRoot -Force
+    Remove-Item -LiteralPath $zip -Force
+    $squirrel = Join-Path $squirrelRoot 'tools\Squirrel.exe'
+    if (!(Test-Path $squirrel)) { throw 'Verified Squirrel.Windows 2.0.1 package lacks tools\Squirrel.exe.' }
+    # Supported Windows 10/11 include .NET Framework 4.7.2 or newer; NuGet requires it.
+    $framework = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full' -ErrorAction SilentlyContinue
+    if (!$framework -or $framework.Release -lt 461808) {
+        throw 'NuGet 6.14.0 requires .NET Framework 4.7.2 or newer, included with supported Windows 10/11. Repair the Windows .NET Framework installation.'
+    }
+    return @{ NuGet = $nuget; Squirrel = $squirrel }
+}
