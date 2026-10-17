@@ -1,0 +1,15 @@
+services:
+  relay:
+    image: ghcr.io/ding-ding-projects/clipboard-sync-server:latest
+    build:
+      context: .
+      dockerfile: server.Dockerfile
+    environment:
+      SERVER_TOKEN: ${SERVER_TOKEN:?Run host.bat to generate a local token or configure SERVER_TOKEN}
+    ports:
+      - "${SERVER_PORT:-8787}:8787"
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/tmp:size=16m,mode=1777"]
